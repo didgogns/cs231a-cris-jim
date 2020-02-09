@@ -1,9 +1,9 @@
+import cv2
 import numpy as np
 import random
 from constants import *
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
-import cv2
 
 class Image:
 	def __init__(self, filename):
@@ -91,7 +91,7 @@ def scramble(img, type2=True):
 			sq = Square(pixels, i, j, count, rot_idx)
 			count += 1
 			pieces.append(sq)
-	random.shuffle(pieces)
+	# random.shuffle(pieces)
 	img.pieces = np.array(pieces)
 
 def assemble_image(img, filename):
