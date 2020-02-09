@@ -1,4 +1,3 @@
-import cv2
 import cv
 import numpy as np
 from constants import *
@@ -12,15 +11,15 @@ def get_nonsym_compat(G, mu, S_inv):
 	#S_inv = np.linalg.inv(S)
 	return np.sum(np.dot(G, S_inv) * G)
 
-def get_compat(left_mean, left_covar_inv, right_mean, right_covar_inv, p_i, p_j):
-	G = p_j[:, 0, :] - p_i[:, P - 1, :]
-	compat = get_nonsym_compat(G, left_mean, left_covar_inv) + \
-		  get_nonsym_compat(-G, right_mean, right_covar_inv)
-	return compat
-
 def get_ssd_compat(p_i, p_j):
 	diffs = p_i[:, P-1, :] - p_j[:, 0, :]
 	return np.sum(np.square(diffs))
+
+def get_compat(left_mean, left_covar_inv, right_mean, right_covar_inv, p_i, p_j):
+	G = p_j[:, 0, :] - p_i[:, P - 1, :]
+	compat = get_nonsym_compat(G, left_mean, left_covar_inv) + \
+		  get_nonsym_compat(-G, right_mean, right_covar_inv) + get_ssd_compat(p_i, p_j) / P
+	return compat
 
 def is_correct_neighbor(sq, sq_rot, nbr, nbr_rot):
 	correct_piece = False
@@ -107,14 +106,16 @@ def compute_edge_dist(img, type2=True, ssd=False, divideBySecond=True):
 
 	dists_list = []
 
+	# This method is way too awkward to use for type2
 	# loop over each of the buckets
 	print 'computing edge dists...'
 	for i in xrange(num_buckets):
 		print 'i', i, '/', num_buckets
 		for j in xrange(num_buckets):
-			print '  j', j, '/', num_buckets
 			for k in xrange(num_buckets):
 				bucket_center = buckets[i][j][k]
+				if len(bucket_center) == 0:
+					continue
 
 				neighbors = bucket_center.copy()
 				dist = 0
@@ -169,7 +170,8 @@ def compute_edge_dist(img, type2=True, ssd=False, divideBySecond=True):
 					# add all the edges to the list
 					for n_ind in xrange(real_neighbor_count):
 						#TODO: add in for both directions
-						dists_list.append( (neighbor_dists[n_ind, 2], sq_ind, neighbor_dists[n_ind, 0].astype(int), sq_rot, neighbor_dists[n_ind, 1].astype(int)) )
+						if neighbor_dists[n_ind, 2] < 25.0:
+							dists_list.append( [neighbor_dists[n_ind, 2], sq_ind, neighbor_dists[n_ind, 0].astype(int), sq_rot])
 
 	return dists_list
 
