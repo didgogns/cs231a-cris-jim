@@ -42,6 +42,7 @@ class DisjointSetForest:
 				n.parent = rep
 				n.localRot = (n.localRot + parRot) % 4
 				n.localCoords = parCoords + np.dot(self.rotMat(parRot), n.localCoords)
+				n.localCoords = n.localCoords.astype(int)
 
 		return n.parent, n.localRot, n.localCoords
 
@@ -95,6 +96,7 @@ class DisjointSetForest:
 
 		small_rot_mat = self.rotMat(small_clust_rot)
 		small_clust_trans = piece_big.localCoords + offset - np.dot(small_rot_mat, piece_small.localCoords)
+		small_clust_trans = small_clust_trans.astype(int)
 
 		coords_small = self.pieceCoordMap[clust_small.pieceIndex]
 		new_coords_small = np.dot(small_rot_mat, coords_small) + small_clust_trans
@@ -108,7 +110,7 @@ class DisjointSetForest:
 		clust_small.localRot = small_clust_rot
 		clust_small.parent = clust_big
 		clust_big.clusterSize += clust_small.clusterSize
-		self.pieceCoordMap[clust_big.pieceIndex] = np.concatenate((coords_big, new_coords_small), axis = 1)
+		self.pieceCoordMap[clust_big.pieceIndex] = np.concatenate((coords_big, new_coords_small), axis = 1).astype(int)
 		del self.pieceCoordMap[clust_small.pieceIndex]
 		self.numClusters -= 1
 		
@@ -184,18 +186,12 @@ class DisjointSetForest:
 
 	def trim(self, index_grid, occupied_grid, W, H):
 		x_0, y_0, piece_count_0 = self.get_best_frame_loc(occupied_grid, W, H)
-		x_1, y_1, piece_count_1 = self.get_best_frame_loc(occupied_grid, H, W)
+		#x_1, y_1, piece_count_1 = self.get_best_frame_loc(occupied_grid, H, W)
 
-		if piece_count_0 > piece_count_1:
-			frame_x = x_0
-			frame_y = y_0
-			frame_w = W
-			frame_h = H
-		else:
-			frame_x = x_1
-			frame_y = y_1
-			frame_w = H
-			frame_h = W
+		frame_x = x_0
+		frame_y = y_0
+		frame_w = W
+		frame_h = H
 
 		extra_piece_list = []
 		[H_prime, W_prime] = occupied_grid.shape
@@ -254,6 +250,7 @@ class DisjointSetForest:
 	def fill(self, index_grid, extra_piece_list, img):
 		# while there are still extra pieces
 		while len(extra_piece_list) > 0:
+			print 'iteration start, extra_piece: ', len(extra_piece_list)
 			# call a function which scans index_grid and returns list of all pieces in top tier
 			top_tier_holes = self.get_top_tier_holes(index_grid)
 
@@ -269,10 +266,9 @@ class DisjointSetForest:
 				# loop over the extra pieces
 				for extra in extra_piece_list:
 					# loop over rotations of the selected extra piece
-					for extra_rot in xrange(4):
+					for extra_rot in xrange(1):
 						# compute MGC dist for putting that extra piece w/ that rotation in that hole
-						total_dist = 0
-						total_dist += get_edge_cost(hole_index, index_grid, extra, extra_rot, 0, img)
+						total_dist = get_edge_cost(hole_index, index_grid, extra, extra_rot, 0, img)
 						total_dist += get_edge_cost(hole_index, index_grid, extra, extra_rot, 1, img)
 						total_dist += get_edge_cost(hole_index, index_grid, extra, extra_rot, 2, img)
 						total_dist += get_edge_cost(hole_index, index_grid, extra, extra_rot, 3, img)
